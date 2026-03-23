@@ -3,6 +3,7 @@ package com.hmdp.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.dto.LoginFormDTO;
 import com.hmdp.dto.Result;
@@ -12,7 +13,6 @@ import com.hmdp.mapper.UserMapper;
 import com.hmdp.service.IUserService;
 import com.hmdp.utils.RegexUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -62,13 +62,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             // 2.如果不符合，返回错误信息
             return Result.fail("手机号格式错误！");
         }
-        // 3.符合，获取Redis中的验证码
-        Object cacheCode = stringRedisTemplate.opsForValue().get(LOGIN_CODE_KEY+ phone);
         String code = loginForm.getCode();
-        if (cacheCode == null || !cacheCode.equals(code)){
+        if (StrUtil.isBlank(code)) {
+            return Result.fail("验证码不能为空！");
+        }
+        // 3.符合，获取Redis中的验证码
+        String cacheCode = stringRedisTemplate.opsForValue().get(LOGIN_CODE_KEY + phone);
+        if (!code.equals(cacheCode)){
             // 4.不一致，报错
             return Result.fail("验证码错误！");
         }
+        // 验证码一次性消费，防止重复登录重放
+        stringRedisTemplate.delete(LOGIN_CODE_KEY + phone);
         // 5.一致，根据手机号查询用户
         User user = query().eq("phone", phone).one();
         if (user == null){
