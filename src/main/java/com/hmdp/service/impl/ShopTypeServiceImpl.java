@@ -14,6 +14,8 @@ import javax.annotation.Resource;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static com.hmdp.utils.RedisConstants.CACHE_SHOP_TTL;
+
 /**
  * <p>
  *  服务实现类
@@ -39,7 +41,7 @@ public class ShopTypeServiceImpl extends ServiceImpl<ShopTypeMapper, ShopType> i
         if (typeList  == null || typeList .isEmpty()) {
             return Result.fail("商铺类型不存在");
         }
-        stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(typeList),30, TimeUnit.MINUTES);
+        stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(typeList),CACHE_SHOP_TTL, TimeUnit.MINUTES);
         return Result.ok(typeList);
     }
 }
